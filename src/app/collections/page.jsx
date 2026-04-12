@@ -14,41 +14,51 @@ export default function CollectionsPage() {
   const [sortBy, setSortBy] = useState("latest");
   const [activeCategory, setActiveCategory] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
+      setError("");
 
-      const [{ data: productData }, { data: categoryData }] = await Promise.all([
-        supabase
-          .from("products")
-          .select("*, product_images(*), categories(name, slug)")
-          .eq("status", "active")
-          .order("created_at", { ascending: false }),
-        supabase.from("categories").select("*").order("name", { ascending: true }),
-      ]);
+      try {
+        const [{ data: productData }, { data: categoryData }] = await Promise.all([
+          supabase
+            .from("products")
+            .select("*, product_images(*), categories(name, slug)")
+            .eq("status", "active")
+            .order("created_at", { ascending: false }),
+          supabase.from("categories").select("*").order("name", { ascending: true }),
+        ]);
 
-      if (productData?.length) {
-        const mapped = productData.map((item) => ({
-          id: item.id,
-          title: item.title,
-          slug: item.slug,
-          description: item.description,
-          price: item.price,
-          compare_at_price: item.compare_at_price,
-          image:
-            item.product_images?.[0]?.image_url ||
-            "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop",
-          category: item.categories?.name || item.brand || "Collection",
-          categorySlug: item.categories?.slug || "uncategorized",
-          featured: item.featured,
-        }));
+        if (productData?.length) {
+          const mapped = productData.map((item) => ({
+            id: item.id,
+            title: item.title,
+            slug: item.slug,
+            description: item.description,
+            price: item.price,
+            compare_at_price: item.compare_at_price,
+            image:
+              item.product_images?.[0]?.image_url ||
+              "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop",
+            category: item.categories?.name || item.brand || "Collection",
+            categorySlug: item.categories?.slug || "uncategorized",
+            featured: item.featured,
+          }));
 
-        setProducts(mapped);
+          setProducts(mapped);
+        }
+
+        setCategories(categoryData || []);
+      } catch (err) {
+        console.error("Collections fetch failed", err);
+        setError(
+          "Unable to load collections. Please verify your Supabase configuration and try again."
+        );
+      } finally {
+        setLoading(false);
       }
-
-      setCategories(categoryData || []);
-      setLoading(false);
     }
 
     fetchData();
