@@ -7,7 +7,14 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/helpers/formatPrice";
-import { calculateCouponDiscount } from "@/lib/helpers/coupon";
+import {
+  calculateCouponDiscount,
+  formatCouponValue,
+  getCouponValidationMessage,
+  getCouponSummary,
+} from "@/lib/helpers/coupon";
+
+const CHECKOUT_COUPON_STORAGE_KEY = "king-checkout-coupon";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -33,6 +40,11 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+
+  const razorpayEnabled =
+    !!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID &&
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID !== "your_razorpay_key_id";
 
   useEffect(() => {
     if (!loading && !user) {
@@ -89,12 +101,76 @@ export default function CheckoutPage() {
     fillUserData();
   }, [user]);
 
+  useEffect(() => {
+    async function fetchCoupons() {
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (error) {
+        console.error("Failed to fetch available coupons", error);
+        return;
+      }
+
+      setAvailableCoupons(data || []);
+    }
+
+    fetchCoupons();
+  }, []);
+
   const shipping = subtotal > 0 ? 99 : 0;
   const discount = useMemo(
-    () => calculateCouponDiscount(appliedCoupon, subtotal),
-    [appliedCoupon, subtotal]
+    () => calculateCouponDiscount(appliedCoupon, subtotal, cart),
+    [appliedCoupon, subtotal, cart]
   );
   const total = Math.max(0, subtotal + shipping - discount);
+
+  useEffect(() => {
+    try {
+      const savedCoupon = sessionStorage.getItem(CHECKOUT_COUPON_STORAGE_KEY);
+      if (!savedCoupon) return;
+
+      const parsed = JSON.parse(savedCoupon);
+      if (!parsed?.coupon) return;
+
+      setCouponCode(parsed.coupon.code || "");
+      setAppliedCoupon(parsed.coupon);
+    } catch (error) {
+      console.error("Failed to restore coupon", error);
+      sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!appliedCoupon) {
+      sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY);
+      return;
+    }
+
+    sessionStorage.setItem(
+      CHECKOUT_COUPON_STORAGE_KEY,
+      JSON.stringify({ coupon: appliedCoupon })
+    );
+  }, [appliedCoupon]);
+
+  useEffect(() => {
+    if (!appliedCoupon) return;
+
+    const validationMessage = getCouponValidationMessage(
+      appliedCoupon,
+      subtotal,
+      cart
+    );
+
+    if (validationMessage) {
+      setAppliedCoupon(null);
+      setCouponCode("");
+      toast.error(validationMessage);
+    }
+  }, [appliedCoupon, subtotal, cart]);
 
   function changeHandler(e) {
     setForm((prev) => ({
@@ -145,7 +221,14 @@ export default function CheckoutPage() {
         return;
       }
 
-      const possibleDiscount = calculateCouponDiscount(data, subtotal);
+      const validationMessage = getCouponValidationMessage(data, subtotal, cart);
+      if (validationMessage) {
+        toast.error(validationMessage);
+        setAppliedCoupon(null);
+        return;
+      }
+
+      const possibleDiscount = calculateCouponDiscount(data, subtotal, cart);
 
       if (!possibleDiscount) {
         toast.error(
@@ -169,6 +252,7 @@ export default function CheckoutPage() {
   function removeCoupon() {
     setAppliedCoupon(null);
     setCouponCode("");
+    sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY);
     toast.success("Coupon removed");
   }
 
@@ -382,6 +466,11 @@ export default function CheckoutPage() {
       if (paymentMethod === "cod") {
         await placeCodOrder();
       } else {
+        if (!razorpayEnabled) {
+          throw new Error(
+            "Online payment is not configured yet. Add valid Razorpay keys or use Cash on Delivery."
+          );
+        }
         if (!window.Razorpay) {
           throw new Error("Razorpay SDK not loaded");
         }
@@ -537,22 +626,38 @@ export default function CheckoutPage() {
                   </div>
                 </label>
 
-                <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-black/10 p-4">
+                <label
+                  className={`flex items-start gap-3 rounded-2xl border p-4 ${
+                    razorpayEnabled
+                      ? "cursor-pointer border-black/10"
+                      : "cursor-not-allowed border-black/10 bg-black/5 opacity-70"
+                  }`}
+                >
                   <input
                     type="radio"
                     name="payment_method"
                     checked={paymentMethod === "razorpay"}
                     onChange={() => setPaymentMethod("razorpay")}
+                    disabled={!razorpayEnabled}
                     className="mt-1"
                   />
                   <div>
                     <p className="font-medium">Razorpay</p>
                     <p className="text-sm text-black/60">
-                      Pay securely online.
+                      {razorpayEnabled
+                        ? "Pay securely online."
+                        : "Unavailable until valid Razorpay keys are added to .env.local."}
                     </p>
                   </div>
                 </label>
               </div>
+
+              {!razorpayEnabled ? (
+                <div className="mt-4 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  Online payment is disabled because the project is still using
+                  placeholder Razorpay keys in `.env.local`.
+                </div>
+              ) : null}
             </div>
 
             <button
@@ -601,6 +706,29 @@ export default function CheckoutPage() {
                 Coupon Code
               </label>
 
+              {!!availableCoupons.length && (
+                <div className="mb-4 grid gap-3">
+                  {availableCoupons.map((coupon) => (
+                    <button
+                      key={coupon.id}
+                      type="button"
+                      onClick={() => setCouponCode(coupon.code)}
+                      className="flex items-start justify-between gap-4 rounded-2xl border border-black/10 bg-black/3 px-4 py-3 text-left"
+                    >
+                      <div>
+                        <p className="font-medium">{coupon.code}</p>
+                        <p className="text-sm text-black/60">
+                          {getCouponSummary(coupon)}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-black px-3 py-1 text-xs uppercase tracking-[0.24em] text-white">
+                        {formatCouponValue(coupon)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {!appliedCoupon ? (
                 <div className="flex gap-2">
                   <input
@@ -628,6 +756,11 @@ export default function CheckoutPage() {
                     <p className="text-sm text-green-700/80">
                       You saved {formatPrice(discount)}
                     </p>
+                    {appliedCoupon.category_id ? (
+                      <p className="text-xs text-green-700/80">
+                        Valid only for matching category items in your cart
+                      </p>
+                    ) : null}
                   </div>
                   <button
                     type="button"

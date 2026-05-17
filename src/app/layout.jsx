@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { UserProductProvider } from "@/context/UserProductContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 
 export const metadata = {
@@ -25,17 +26,22 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="bg-[#faf7f2] text-black antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className="bg-[#faf7f2] text-black antialiased"
+        suppressHydrationWarning
+      >
         <AuthProvider>
-          <WishlistProvider>
-            <CartProvider>
-              <Navbar />
-              {children}
-              <Footer />
-              <Toaster position="top-right" />
-            </CartProvider>
-          </WishlistProvider>
+          <UserProductProvider>
+            <WishlistProvider>
+              <CartProvider>
+                <Navbar />
+                {children}
+                <Footer />
+                <Toaster position="top-right" />
+              </CartProvider>
+            </WishlistProvider>
+          </UserProductProvider>
         </AuthProvider>
       </body>
     </html>

@@ -6,6 +6,9 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/helpers/formatPrice";
 
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop";
+
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, subtotal } = useCart();
 
@@ -35,14 +38,17 @@ export default function CartPage() {
       ) : (
         <div className="grid gap-8 lg:grid-cols-[1.5fr_0.8fr]">
           <div className="space-y-4">
-            {cart.map((item) => (
+            {cart.map((item) => {
+              const imageSrc = item.image?.trim?.() ? item.image : FALLBACK_IMAGE;
+
+              return (
               <div
                 key={item.cartKey}
                 className="grid gap-4 rounded-3xl border border-black/10 bg-white p-4 shadow-sm md:grid-cols-[120px_1fr_auto]"
               >
                 <div className="relative h-[140px] overflow-hidden rounded-2xl">
                   <Image
-                    src={item.image}
+                    src={imageSrc}
                     alt={item.title}
                     fill
                     className="object-cover"
@@ -98,7 +104,8 @@ export default function CartPage() {
                   </p>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="h-fit rounded-3xl border border-black/10 bg-white p-6 shadow-sm">

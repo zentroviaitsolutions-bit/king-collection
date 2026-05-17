@@ -8,6 +8,18 @@ export const ORDER_STATUSES = [
   "cancelled",
 ];
 
+export const CANCELABLE_ORDER_STATUSES = [
+  "placed",
+  "confirmed",
+  "packed",
+  "shipped",
+  "out_for_delivery",
+];
+
+export function isOrderCancelable(status) {
+  return CANCELABLE_ORDER_STATUSES.includes(status);
+}
+
 export function getStatusLabel(status) {
   const labels = {
     placed: "Order Placed",

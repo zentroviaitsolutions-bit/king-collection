@@ -1,15 +1,36 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useUserProducts } from "@/context/UserProductContext";
 
 const CartContext = createContext();
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop";
+
+function normalizeCartItem(item) {
+  if (!item) return item;
+
+  return {
+    ...item,
+    image: item.image?.trim?.() ? item.image : FALLBACK_IMAGE,
+  };
+}
 
 export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
+  const { getProductPurchaseState } = useUserProducts();
 
   useEffect(() => {
-    const saved = localStorage.getItem("king-cart");
-    if (saved) setCart(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem("king-cart");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setCart(Array.isArray(parsed) ? parsed.map(normalizeCartItem) : []);
+      }
+    } catch (error) {
+      console.error("Failed to restore cart", error);
+      localStorage.removeItem("king-cart");
+    }
   }, []);
 
   useEffect(() => {
@@ -17,17 +38,38 @@ export function CartProvider({ children }) {
   }, [cart]);
 
   function addToCart(product) {
-    const cartKey = `${product.id}-${product.variant_id || "default"}`;
+    if (!product?.id) {
+      return { ok: false, message: "This product could not be added right now." };
+    }
 
-    // ✅ NEW: max stock logic
+    const purchaseState = getProductPurchaseState(product.id);
+    if (purchaseState.hasActiveOrder) {
+      return {
+        ok: false,
+        message:
+          "This product is already in one of your active orders. You can add it again after delivery.",
+      };
+    }
+
+    const cartKey = `${product.id}-${product.variant_id || "default"}`;
     const maxStock = Number(product.stock ?? Infinity);
+    const found = cart.find((item) => item.cartKey === cartKey);
+
+    if (found && found.quantity >= maxStock) {
+      return {
+        ok: false,
+        message: "You already have the maximum available quantity in your cart.",
+      };
+    }
+
+    if (!found && maxStock <= 0) {
+      return { ok: false, message: "This item is currently out of stock." };
+    }
 
     setCart((prev) => {
-      const found = prev.find((item) => item.cartKey === cartKey);
-
-      // ✅ UPDATED: prevent exceeding stock
+      const existing = prev.find((item) => item.cartKey === cartKey);
       if (found) {
-        if (found.quantity >= maxStock) {
+        if (existing?.quantity >= maxStock) {
           return prev;
         }
 
@@ -38,7 +80,6 @@ export function CartProvider({ children }) {
         );
       }
 
-      // ✅ NEW: prevent adding if out of stock
       if (maxStock <= 0) {
         return prev;
       }
@@ -46,12 +87,17 @@ export function CartProvider({ children }) {
       return [
         ...prev,
         {
-          ...product,
+          ...normalizeCartItem(product),
           cartKey,
           quantity: 1,
         },
       ];
     });
+
+    return {
+      ok: true,
+      message: found ? "Cart quantity updated." : "Added to cart.",
+    };
   }
 
   function removeFromCart(cartKey) {
@@ -63,7 +109,12 @@ export function CartProvider({ children }) {
 
     setCart((prev) =>
       prev.map((item) =>
-        item.cartKey === cartKey ? { ...item, quantity } : item
+        item.cartKey === cartKey
+          ? {
+              ...item,
+              quantity: Math.min(quantity, Number(item.stock ?? quantity)),
+            }
+          : item
       )
     );
   }

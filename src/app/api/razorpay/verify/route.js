@@ -13,6 +13,17 @@ export async function POST(req) {
 
     const secret = process.env.RAZORPAY_KEY_SECRET;
 
+    if (!secret || secret === "your_razorpay_key_secret") {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Razorpay verification is not configured. Add a valid RAZORPAY_KEY_SECRET in .env.local.",
+        },
+        { status: 503 }
+      );
+    }
+
     const generatedSignature = crypto
       .createHmac("sha256", secret)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)

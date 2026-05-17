@@ -19,14 +19,21 @@ export default function MobileMenu({ open, onClose, user, profile }) {
           />
 
           <motion.div
-            className="fixed right-0 top-0 z-[70] h-full w-[82%] max-w-sm bg-white p-5 shadow-2xl"
+            className="fixed right-0 top-0 z-[70] h-full w-[82%] max-w-sm border-l border-black/10 bg-[#fffaf2] p-5 shadow-2xl"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.25 }}
           >
             <div className="mb-8 flex items-center justify-between">
-              <h2 className="text-xl font-bold">King Collection</h2>
+              <div>
+                <p className="font-serif text-xl font-bold tracking-[0.08em]">
+                  KING
+                </p>
+                <p className="text-[10px] uppercase tracking-[0.35em] text-black/45">
+                  Collection
+                </p>
+              </div>
               <button
                 onClick={onClose}
                 className="rounded-full border border-black/10 p-2"
@@ -39,28 +46,28 @@ export default function MobileMenu({ open, onClose, user, profile }) {
               <Link
                 href="/"
                 onClick={onClose}
-                className="block rounded-2xl px-4 py-3 hover:bg-black/5"
+                className="block rounded-2xl border border-transparent px-4 py-3 hover:border-black/10 hover:bg-white"
               >
                 Home
               </Link>
               <Link
                 href="/collections"
                 onClick={onClose}
-                className="block rounded-2xl px-4 py-3 hover:bg-black/5"
+                className="block rounded-2xl border border-transparent px-4 py-3 hover:border-black/10 hover:bg-white"
               >
                 Collections
               </Link>
               <Link
                 href="/orders"
                 onClick={onClose}
-                className="block rounded-2xl px-4 py-3 hover:bg-black/5"
+                className="block rounded-2xl border border-transparent px-4 py-3 hover:border-black/10 hover:bg-white"
               >
                 Orders
               </Link>
               <Link
                 href="/track-order"
                 onClick={onClose}
-                className="block rounded-2xl px-4 py-3 hover:bg-black/5"
+                className="block rounded-2xl border border-transparent px-4 py-3 hover:border-black/10 hover:bg-white"
               >
                 Track Order
               </Link>
@@ -68,7 +75,7 @@ export default function MobileMenu({ open, onClose, user, profile }) {
                 <Link
                   href="/profile"
                   onClick={onClose}
-                  className="block rounded-2xl px-4 py-3 hover:bg-black/5"
+                  className="block rounded-2xl border border-transparent px-4 py-3 hover:border-black/10 hover:bg-white"
                 >
                   Profile
                 </Link>
@@ -77,7 +84,7 @@ export default function MobileMenu({ open, onClose, user, profile }) {
                 <Link
                   href="/admin"
                   onClick={onClose}
-                  className="block rounded-2xl px-4 py-3 hover:bg-black/5"
+                  className="block rounded-2xl border border-transparent px-4 py-3 hover:border-black/10 hover:bg-white"
                 >
                   Admin
                 </Link>

@@ -23,9 +23,13 @@ export async function POST(req) {
 
     return NextResponse.json(order);
   } catch (error) {
+    const status = error.message?.includes("Razorpay is not configured")
+      ? 503
+      : 500;
+
     return NextResponse.json(
       { error: error.message || "Failed to create Razorpay order" },
-      { status: 500 }
+      { status }
     );
   }
 }

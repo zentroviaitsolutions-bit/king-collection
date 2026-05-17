@@ -3,31 +3,38 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "rm -rf .next && next build && next start -p 3001",
+    "dev:webpack": "rm -rf .next && next dev",
+    "dev:fast": "next dev --turbopack",
+    "dev:hot": "rm -rf .next && next dev --turbopack",
+    "dev:clean": "rm -rf .next && next dev --turbopack",
+    "dev:stable": "rm -rf .next && next build && next start -p 3001",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.9.0",
-    "@supabase/supabase-js": "^2.99.2",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.49.8",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
-    "framer-motion": "^12.38.0",
-    "gsap": "^3.14.2",
-    "lucide-react": "^0.577.0",
-    "next": "16.1.6",
+    "framer-motion": "^12.15.0",
+    "gsap": "^3.13.0",
+    "lucide-react": "^0.511.0",
+    "next": "^15.3.2",
     "razorpay": "^2.9.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "react-hot-toast": "^2.6.0",
-    "react-icons": "^5.6.0",
-    "recharts": "^3.8.0"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-hot-toast": "^2.5.2",
+    "react-icons": "^5.5.0",
+    "recharts": "^2.15.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4"
+    "@tailwindcss/postcss": "^4.3.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.27.0",
+    "eslint-config-next": "^15.3.2",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^4.3.0"
   }
 }

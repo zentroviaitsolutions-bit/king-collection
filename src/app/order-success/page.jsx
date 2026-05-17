@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default function OrderSuccessPage() {
+function OrderSuccessPageContent() {
   const searchParams = useSearchParams();
   const order = searchParams.get("order");
 
@@ -55,5 +56,21 @@ export default function OrderSuccessPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center px-4 py-12">
+          <div className="w-full rounded-3xl border border-black/10 bg-white p-8 text-center shadow-sm md:p-12">
+            Loading your order details...
+          </div>
+        </main>
+      }
+    >
+      <OrderSuccessPageContent />
+    </Suspense>
   );
 }

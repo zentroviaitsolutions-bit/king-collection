@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/helpers/formatPrice";
 import { ORDER_STATUSES, getStatusLabel } from "@/lib/helpers/orderStatus";
 
-export default function TrackOrderPage() {
+const ORDER_STATUS_DESCRIPTIONS = {
+  placed: "We received your order and started processing it.",
+  confirmed: "Your order details and payment are confirmed.",
+  packed: "Your items are packed and ready to leave our facility.",
+  shipped: "Your package is on the way with the delivery partner.",
+  out_for_delivery: "The package is with the courier for final delivery.",
+  delivered: "The order has been delivered successfully.",
+};
+
+function TrackOrderPageContent() {
   const searchParams = useSearchParams();
   const initialOrder = searchParams.get("order") || "";
 
@@ -117,41 +126,104 @@ export default function TrackOrderPage() {
           <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
             <h3 className="text-2xl font-semibold">Order Timeline</h3>
 
-            <div className="mt-6 space-y-4">
-              {ORDER_STATUSES.filter((status) => status !== "cancelled").map(
-                (status, index) => {
-                  const completed = index < currentStatusIndex;
-                  const current = index === currentStatusIndex;
+            <div className="mt-6">
+              <div className="hidden grid-cols-6 gap-3 lg:grid">
+                {ORDER_STATUSES.filter((status) => status !== "cancelled").map(
+                  (status, index, filteredStatuses) => {
+                    const completed = index < currentStatusIndex;
+                    const current = index === currentStatusIndex;
+                    const reached = completed || current;
+                    const isLast = index === filteredStatuses.length - 1;
 
-                  return (
-                    <div key={status} className="flex items-start gap-4">
-                      <div
-                        className={`mt-1 h-4 w-4 rounded-full border-2 ${
-                          completed || current
-                            ? "border-black bg-black"
-                            : "border-black/20 bg-white"
-                        }`}
-                      />
-                      <div>
-                        <p
-                          className={`font-medium ${
-                            current ? "text-black" : "text-black/70"
-                          }`}
-                        >
-                          {getStatusLabel(status)}
-                        </p>
-                        <p className="text-sm text-black/50">
-                          {current
-                            ? "Current order status"
-                            : completed
-                            ? "Completed"
-                            : "Pending"}
-                        </p>
+                    return (
+                      <div key={status} className="relative">
+                        {!isLast ? (
+                          <div
+                            className={`absolute left-[calc(50%+18px)] top-[18px] h-[3px] w-[calc(100%-8px)] ${
+                              completed ? "bg-black" : "bg-black/10"
+                            }`}
+                          />
+                        ) : null}
+
+                        <div className="relative rounded-[1.5rem] border border-black/10 bg-black/[0.02] p-4">
+                          <div
+                            className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold ${
+                              reached
+                                ? "border-black bg-black text-white"
+                                : "border-black/15 bg-white text-black/45"
+                            }`}
+                          >
+                            {index + 1}
+                          </div>
+                          <p className="mt-4 font-semibold">
+                            {getStatusLabel(status)}
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-black/55">
+                            {ORDER_STATUS_DESCRIPTIONS[status]}
+                          </p>
+                          <p className="mt-3 text-xs uppercase tracking-[0.24em] text-black/45">
+                            {current
+                              ? "Current"
+                              : completed
+                              ? "Completed"
+                              : "Pending"}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                }
-              )}
+                    );
+                  }
+                )}
+              </div>
+
+              <div className="space-y-4 lg:hidden">
+                {ORDER_STATUSES.filter((status) => status !== "cancelled").map(
+                  (status, index, filteredStatuses) => {
+                    const completed = index < currentStatusIndex;
+                    const current = index === currentStatusIndex;
+                    const reached = completed || current;
+                    const isLast = index === filteredStatuses.length - 1;
+
+                    return (
+                      <div key={status} className="relative flex items-start gap-4">
+                        <div className="relative flex flex-col items-center">
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold ${
+                              reached
+                                ? "border-black bg-black text-white"
+                                : "border-black/15 bg-white text-black/45"
+                            }`}
+                          >
+                            {index + 1}
+                          </div>
+                          {!isLast ? (
+                            <div
+                              className={`mt-2 h-14 w-[3px] ${
+                                completed ? "bg-black" : "bg-black/10"
+                              }`}
+                            />
+                          ) : null}
+                        </div>
+
+                        <div className="flex-1 rounded-[1.5rem] border border-black/10 bg-black/[0.02] p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="font-semibold">{getStatusLabel(status)}</p>
+                            <span className="text-xs uppercase tracking-[0.24em] text-black/45">
+                              {current
+                                ? "Current"
+                                : completed
+                                ? "Completed"
+                                : "Pending"}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-black/55">
+                            {ORDER_STATUS_DESCRIPTIONS[status]}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
 
               {order.order_status === "cancelled" && (
                 <div className="flex items-start gap-4 rounded-2xl border border-red-200 bg-red-50 p-4">
@@ -225,5 +297,21 @@ export default function TrackOrderPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function TrackOrderPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto max-w-5xl px-4 py-12">
+          <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+            Loading order tracker...
+          </div>
+        </main>
+      }
+    >
+      <TrackOrderPageContent />
+    </Suspense>
   );
 }

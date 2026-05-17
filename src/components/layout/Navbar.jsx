@@ -22,26 +22,55 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
-              className="rounded-full border border-black/10 p-2 md:hidden"
+              className="rounded-full border border-black/10 bg-white/80 p-2 shadow-sm md:hidden"
             >
               <Menu size={18} />
             </button>
 
-            <Link href="/" className="text-2xl font-bold tracking-wide">
-              King Collection
+            <Link href="/" className="flex flex-col leading-none">
+              <span className="font-serif text-2xl font-bold tracking-[0.08em]">
+                KING
+              </span>
+              <span className="mt-1 text-[10px] uppercase tracking-[0.42em] text-black/45">
+                Collection
+              </span>
             </Link>
           </div>
 
-          <nav className="hidden gap-6 md:flex">
-            <Link href="/">Home</Link>
-            <Link href="/collections">Collections</Link>
-            <Link href="/orders">Orders</Link>
-            <Link href="/track-order">Track Order</Link>
-            {isAdmin(profile) && <Link href="/admin">Admin</Link>}
+          <nav className="hidden items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-2 shadow-sm md:flex">
+            <Link href="/" className="rounded-full px-3 py-2 text-sm hover:bg-black/5">
+              Home
+            </Link>
+            <Link
+              href="/collections"
+              className="rounded-full px-3 py-2 text-sm hover:bg-black/5"
+            >
+              Collections
+            </Link>
+            <Link
+              href="/orders"
+              className="rounded-full px-3 py-2 text-sm hover:bg-black/5"
+            >
+              Orders
+            </Link>
+            <Link
+              href="/track-order"
+              className="rounded-full px-3 py-2 text-sm hover:bg-black/5"
+            >
+              Track Order
+            </Link>
+            {isAdmin(profile) && (
+              <Link href="/admin" className="rounded-full px-3 py-2 text-sm hover:bg-black/5">
+                Admin
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-4">
-            <Link href="/wishlist" className="relative">
+            <Link
+              href="/wishlist"
+              className="relative rounded-full border border-transparent p-2 hover:border-black/10 hover:bg-white/70"
+            >
               <Heart size={20} />
               {wishlist.length > 0 && (
                 <span className="absolute -right-2 -top-2 rounded-full bg-black px-1.5 text-xs text-white">
@@ -50,7 +79,10 @@ export default function Navbar() {
               )}
             </Link>
 
-            <Link href="/cart" className="relative">
+            <Link
+              href="/cart"
+              className="relative rounded-full border border-transparent p-2 hover:border-black/10 hover:bg-white/70"
+            >
               <ShoppingCart size={20} />
               {cart.length > 0 && (
                 <span className="absolute -right-2 -top-2 rounded-full bg-black px-1.5 text-xs text-white">
@@ -59,7 +91,10 @@ export default function Navbar() {
               )}
             </Link>
 
-            <Link href={user ? "/profile" : "/login"} className="flex items-center gap-2">
+            <Link
+              href={user ? "/profile" : "/login"}
+              className="flex items-center gap-2 rounded-full border border-transparent p-2 hover:border-black/10 hover:bg-white/70"
+            >
               <User size={20} />
             </Link>
 

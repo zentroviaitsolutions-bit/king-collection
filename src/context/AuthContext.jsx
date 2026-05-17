@@ -72,15 +72,15 @@ export function AuthProvider({ children }) {
 
         const currentUser = session?.user || null;
         setUser(currentUser);
+        setLoading(false);
 
         if (currentUser) {
-          await ensureProfile(currentUser);
+          ensureProfile(currentUser);
         } else {
           setProfile(null);
         }
       } catch (error) {
         console.error("Initial session error:", error);
-      } finally {
         setLoading(false);
       }
     }
@@ -93,15 +93,15 @@ export function AuthProvider({ children }) {
       try {
         const currentUser = session?.user || null;
         setUser(currentUser);
+        setLoading(false);
 
         if (currentUser) {
-          await ensureProfile(currentUser);
+          ensureProfile(currentUser);
         } else {
           setProfile(null);
         }
       } catch (error) {
         console.error("Auth state change error:", error);
-      } finally {
         setLoading(false);
       }
     });
