@@ -63,6 +63,23 @@ export function AuthProvider({ children }) {
     return data;
   }
 
+  async function hasAccount(email) {
+    const cleanEmail = email.trim().toLowerCase();
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", cleanEmail)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Check account error:", error.message);
+      return false;
+    }
+
+    return Boolean(data?.id);
+  }
+
   useEffect(() => {
     async function getInitialSession() {
       try {
@@ -171,6 +188,37 @@ export function AuthProvider({ children }) {
     return data;
   }
 
+  async function requestPasswordReset(email) {
+    const cleanEmail = email.trim().toLowerCase();
+
+    const { data, error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async function updatePassword(password) {
+    const { data, error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    return data;
+  }
+
+  async function updateEmail(email) {
+    const cleanEmail = email.trim().toLowerCase();
+    const { data, error } = await supabase.auth.updateUser({ email: cleanEmail });
+    if (error) throw error;
+
+    const nextUser = data?.user || null;
+    if (nextUser) {
+      setUser(nextUser);
+      await ensureProfile(nextUser);
+    }
+
+    return data;
+  }
+
   async function logout() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
@@ -188,6 +236,10 @@ export function AuthProvider({ children }) {
         signUp,
         signIn,
         signInWithGoogle,
+        hasAccount,
+        requestPasswordReset,
+        updatePassword,
+        updateEmail,
         logout,
       }}
     >

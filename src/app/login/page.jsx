@@ -36,7 +36,7 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, hasAccount, requestPasswordReset } = useAuth();
 
   const [form, setForm] = useState({
     email: "",
@@ -45,6 +45,7 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   function changeHandler(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -55,6 +56,14 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
+      const accountExists = await hasAccount(form.email);
+
+      if (!accountExists) {
+        toast.error("Please sign up first before logging in");
+        router.push("/signup");
+        return;
+      }
+
       await signIn(form.email.trim(), form.password);
       toast.success("Logged in successfully");
       router.push("/profile");
@@ -75,6 +84,31 @@ export default function LoginPage() {
     }
   }
 
+  async function handleForgotPassword() {
+    if (!form.email.trim()) {
+      toast.error("Enter your email first");
+      return;
+    }
+
+    try {
+      setResetLoading(true);
+
+      const accountExists = await hasAccount(form.email);
+      if (!accountExists) {
+        toast.error("Please sign up first before using forgot password");
+        router.push("/signup");
+        return;
+      }
+
+      await requestPasswordReset(form.email);
+      toast.success("Password reset link sent to your email");
+    } catch (error) {
+      toast.error(error?.message || "Failed to send reset link");
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
   return (
     <main className="mx-auto flex min-h-[80vh] max-w-7xl items-center px-4 py-12">
       <div className="mx-auto w-full max-w-md rounded-3xl border border-black/10 bg-white p-6 shadow-sm md:p-8">
@@ -85,6 +119,13 @@ export default function LoginPage() {
         <p className="mt-2 text-sm text-black/60">
           Continue with Google or sign in using your email and password.
         </p>
+
+        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Admin access:
+          <Link href="/admin/login" className="ml-2 font-semibold text-black">
+            Login to Admin Panel
+          </Link>
+        </div>
 
         <button
           type="button"
@@ -119,7 +160,17 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">Password</label>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block text-sm font-medium">Password</label>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={resetLoading || loading || googleLoading}
+                className="text-sm font-medium text-black/60 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {resetLoading ? "Sending..." : "Forgot Password?"}
+              </button>
+            </div>
             <input
               type="password"
               name="password"

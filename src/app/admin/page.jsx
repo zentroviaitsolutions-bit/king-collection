@@ -6,8 +6,10 @@ import { supabase } from "@/lib/supabase/client";
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AnalyticsCharts from "@/components/admin/AnalyticsCharts";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AdminDashboardPage() {
+  const { user, updateEmail } = useAuth();
   const [stats, setStats] = useState({
     products: 0,
     orders: 0,
@@ -17,6 +19,12 @@ export default function AdminDashboardPage() {
 
   const [revenueData, setRevenueData] = useState([]);
   const [orderData, setOrderData] = useState([]);
+  const [accountEmail, setAccountEmail] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  useEffect(() => {
+    setAccountEmail(user?.email || "");
+  }, [user]);
 
   useEffect(() => {
     async function fetchStats() {
@@ -79,6 +87,33 @@ export default function AdminDashboardPage() {
     fetchStats();
   }, []);
 
+  async function handleAdminEmailUpdate(e) {
+    e.preventDefault();
+
+    if (!accountEmail.trim()) {
+      toast.error("Enter the new admin email");
+      return;
+    }
+
+    try {
+      setEmailLoading(true);
+      await updateEmail(accountEmail);
+
+      await supabase
+        .from("profiles")
+        .update({ email: accountEmail.trim().toLowerCase() })
+        .eq("id", user?.id);
+
+      toast.success(
+        "Admin email update requested. Confirm it from the new email inbox if Supabase asks for verification."
+      );
+    } catch (error) {
+      toast.error(error.message || "Failed to update admin email");
+    } finally {
+      setEmailLoading(false);
+    }
+  }
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-12">
       <AdminGuard>
@@ -113,6 +148,37 @@ export default function AdminDashboardPage() {
                 <p className="text-sm text-black/50">Pending Orders</p>
                 <h3 className="mt-2 text-3xl font-bold">{stats.pendingOrders}</h3>
               </div>
+            </div>
+
+            <div className="mt-8 rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+              <p className="text-sm uppercase tracking-[0.24em] text-black/45">
+                Admin Account
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold">Change Admin Email</h2>
+              <p className="mt-2 text-sm text-black/60">
+                Update the admin login email if ownership changes or you want a
+                new account address.
+              </p>
+
+              <form
+                onSubmit={handleAdminEmailUpdate}
+                className="mt-5 flex flex-col gap-4 md:flex-row"
+              >
+                <input
+                  type="email"
+                  value={accountEmail}
+                  onChange={(e) => setAccountEmail(e.target.value)}
+                  placeholder="Enter new admin email"
+                  className="flex-1 rounded-2xl border border-black/10 px-4 py-3 outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={emailLoading}
+                  className="rounded-2xl bg-black px-5 py-3 font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {emailLoading ? "Updating..." : "Update Email"}
+                </button>
+              </form>
             </div>
 
             <div className="mt-8">
