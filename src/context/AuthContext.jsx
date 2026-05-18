@@ -63,23 +63,6 @@ export function AuthProvider({ children }) {
     return data;
   }
 
-  async function hasAccount(email) {
-    const cleanEmail = email.trim().toLowerCase();
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", cleanEmail)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Check account error:", error.message);
-      return false;
-    }
-
-    return Boolean(data?.id);
-  }
-
   useEffect(() => {
     async function getInitialSession() {
       try {
@@ -236,7 +219,6 @@ export function AuthProvider({ children }) {
         signUp,
         signIn,
         signInWithGoogle,
-        hasAccount,
         requestPasswordReset,
         updatePassword,
         updateEmail,

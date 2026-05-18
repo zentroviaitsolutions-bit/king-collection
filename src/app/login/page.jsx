@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -36,7 +36,13 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn, signInWithGoogle, hasAccount, requestPasswordReset } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    signIn,
+    signInWithGoogle,
+    requestPasswordReset,
+  } = useAuth();
 
   const [form, setForm] = useState({
     email: "",
@@ -51,24 +57,33 @@ export default function LoginPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/profile");
+    }
+  }, [authLoading, user, router]);
+
   async function submitHandler(e) {
     e.preventDefault();
 
     try {
       setLoading(true);
-      const accountExists = await hasAccount(form.email);
-
-      if (!accountExists) {
-        toast.error("Please sign up first before logging in");
-        router.push("/signup");
-        return;
-      }
-
       await signIn(form.email.trim(), form.password);
       toast.success("Logged in successfully");
       router.push("/profile");
     } catch (error) {
-      toast.error(error?.message || "Login failed");
+      const normalizedEmail = form.email.trim().toLowerCase();
+
+      if (user?.email?.toLowerCase() === normalizedEmail) {
+        toast.success("You are already signed in");
+        router.replace("/profile");
+        return;
+      }
+
+      toast.error(
+        error?.message ||
+          "Login failed. If you created this account with Google, use Continue with Google."
+      );
     } finally {
       setLoading(false);
     }
@@ -92,16 +107,20 @@ export default function LoginPage() {
 
     try {
       setResetLoading(true);
+      const normalizedEmail = form.email.trim().toLowerCase();
 
-      const accountExists = await hasAccount(form.email);
-      if (!accountExists) {
-        toast.error("Please sign up first before using forgot password");
-        router.push("/signup");
+      if (user?.email?.toLowerCase() === normalizedEmail) {
+        await requestPasswordReset(form.email);
+        toast.success(
+          "Password reset link sent to your email."
+        );
         return;
       }
 
       await requestPasswordReset(form.email);
-      toast.success("Password reset link sent to your email");
+      toast.success(
+        "If this email is registered, a password reset link has been sent."
+      );
     } catch (error) {
       toast.error(error?.message || "Failed to send reset link");
     } finally {

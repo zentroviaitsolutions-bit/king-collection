@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const { updatePassword } = useAuth();
+  const { updatePassword, logout } = useAuth();
   const [form, setForm] = useState({
     password: "",
     confirmPassword: "",
@@ -35,8 +35,9 @@ export default function ResetPasswordPage() {
     try {
       setLoading(true);
       await updatePassword(form.password);
+      await logout();
       toast.success("Password updated successfully");
-      router.push("/login");
+      router.replace("/login");
     } catch (error) {
       toast.error(error?.message || "Failed to update password");
     } finally {
